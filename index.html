@@ -361,18 +361,21 @@
     </div>
   </div>
 
-  <div class="white-card">
-  <div class="text-start mx-auto" style="max-width: 550px;">
-    <label for="eventSelect" class="form-label fs-5 fw-medium mb-2">เลือกรายการแข่งขัน</label>
-    <select id="eventSelect" class="form-select form-select-lg" onchange="onEventChanged()">
-      <option value="">-- กรุณาเลือกรายการ --</option>
-    </select>
-    
-    <div class="text-primary mt-3 text-center fs-6 fw-bold">
-      <em>* เพื่อให้ Website แสดงผลได้อย่างเต็มประสิทธิภาพ แนะนำให้เปิดบน Browser ใน PC หรือ Notebook</em>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-12 col-md-12">
+        <div class="white-card">
+          <div class="text-start mx-auto" style="max-width: 550px;">
+            <label for="eventSelect" class="form-label fs-5 fw-medium mb-2">เลือกรายการแข่งขัน</label>
+            <select id="eventSelect" class="form-select form-select-lg" onchange="onEventChanged()">
+              <option value="">-- กรุณาเลือกรายการ --</option>
+            </select>
+          </div>
+        </div>
+        <div id="tablesMainContainer"></div>
+      </div>
     </div>
   </div>
-</div>
 
   <div id="v1ImageModal" class="modal-v1" onclick="closeV1Preview()">
     <span class="modal-v1-close-btn" onclick="closeV1Preview()">&times;</span>
