@@ -20,6 +20,10 @@
       --bg-light: #f8f9fa;
     }
 
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: 'Prompt', sans-serif;
       background-color: var(--bg-light);
@@ -28,6 +32,7 @@
       padding-bottom: 100px;
       margin: 0;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
     .top-banner {
@@ -69,16 +74,19 @@
       border-radius: 12px;
       overflow: hidden;
       border: 1px solid rgba(0, 0, 0, 0.05);
+      width: 100%;
     }
 
     .table {
       margin-bottom: 0;
-      table-layout: fixed;
       width: 100%;
+      table-layout: fixed;
     }
 
     @media (max-width: 767.98px) {
-      .table { table-layout: auto; }
+      .table { 
+        table-layout: auto;
+      }
     }
 
     .table thead {
@@ -126,14 +134,23 @@
       display: table-row;
     }
 
+    .detail-row td {
+      max-width: 100%;
+      position: relative;
+      overflow: hidden;
+      padding: 0 !important;
+    }
+
     .accordion-inner-box {
       background-color: #f8f9fa; 
       border: 1px solid #dee2e6; 
       border-radius: 16px;       
-      padding: 18px;
+      padding: 14px;
       margin: 8px;              
+      width: auto;
+      box-sizing: border-box;
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.01); 
-      overflow: hidden; /* ป้องกันกล่องหลักล้น */
+      overflow: hidden;
     }
 
     @media (min-width: 768px) {
@@ -154,10 +171,13 @@
 
     .congrat-badge, .medal-text-badge {
       border-radius: 6px;
-      padding: 8px 16px;
+      padding: 8px 12px;
       font-weight: 700;
       display: inline-block;
-      font-size: 1rem;
+      font-size: 0.95rem;
+      max-width: 100%;
+      white-space: normal;
+      word-break: break-word;
     }
 
     .congrat-badge {
@@ -172,105 +192,107 @@
       border: 1px solid rgba(255, 153, 0, 0.25);
     }
 
+    /* 📌 บังคับโครงสร้างตารางคะแนนให้เรียงแถวเดี่ยว 3 บรรทัดแนวตั้ง ทั้งบนมือถือ แท็บเล็ต และคอมพิวเตอร์ */
     .scores-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
       margin: 8px 0;
+      width: 100%;
     }
 
     .score-box {
       background: #ffffff;
       border: 1px solid #cbd5e1;
-      padding: 10px 6px;
+      padding: 10px 14px;
       border-radius: 8px;
-      text-align: center;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap; 
+      justify-content: flex-start;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      min-width: 0;
     }
 
     .score-box .score-label {
       font-weight: 700;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       color: #64748b;
+      white-space: nowrap;
+    }
+
+    .score-divider {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      display: inline-block;
     }
 
     .score-value {
       font-weight: 800;
       color: var(--text-dark);
-      font-size: 1.05rem;
-      margin-top: 2px;
+      font-size: 0.95rem;
+    }
+
+    .responsive-member-row {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr); 
+      gap: 0.75rem;
+      padding: 0.25rem 0;
+      width: 100%;
+    }
+
+    @media (min-width: 480px) {
+      .responsive-member-row { grid-template-columns: repeat(2, 1fr); }
     }
 
     @media (min-width: 768px) {
-      .score-value { font-size: 1.1rem; }
+      .responsive-member-row { grid-template-columns: repeat(2, 1fr); }
     }
 
-    /* 📌 ระบบสไลด์แนวนอนสำหรับรายชื่อสมาชิกเมื่อเปิดบนอุปกรณ์เคลื่อนที่ */
-    .responsive-member-row {
-      display: flex;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      gap: 1rem;
-      padding: 0.5rem 0.25rem 1rem 0.25rem;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    /* ซ่อน Scrollbar ของบราวเซอร์บางตัวเพื่อความสวยงามแต่สไลด์ได้ปกติ */
-    .responsive-member-row::-webkit-scrollbar {
-      height: 6px;
-    }
-    .responsive-member-row::-webkit-scrollbar-thumb {
-      background-color: #cbd5e1;
-      border-radius: 10px;
+    @media (min-width: 1200px) {
+      .responsive-member-row { grid-template-columns: repeat(4, 1fr); }
     }
 
     .member-clickable-card {
       background: #ffffff;
       border: 2px solid #e2e8f0;
       border-radius: 14px;
-      padding: 1.25rem;
+      padding: 1rem;
       cursor: pointer;
       transition: all 0.25s ease;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
-      flex: 0 0 260px; /* ล็อกความกว้างการ์ดรายชื่อบนหน้าจอมือถือไม่ให้เบียดกันจนอ่านยาก */
+      width: 100%;
+      min-width: 0;
     }
 
-    @media (min-width: 768px) {
-      .responsive-member-row {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        overflow-x: visible;
-        padding: 0;
-      }
-      .member-clickable-card {
-        flex: none;
-      }
-    }
-
-    @media (min-width: 1200px) {
-      .responsive-member-row {
-        grid-template-columns: repeat(4, 1fr);
-      }
+    .member-clickable-card:hover {
+      transform: translateY(-3px);
+      border-color: #38ef7d;
+      box-shadow: 0 8px 16px rgba(56, 239, 125, 0.1);
     }
 
     .member-role-title {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: 700;
       color: #475569;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.3rem;
     }
 
     .member-name-text {
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       font-weight: 700;
       color: var(--text-dark);
       margin-bottom: 0;
     }
 
     .click-action-hint {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 600;
       color: #11998e;
-      margin-top: 0.6rem;
+      margin-top: 0.5rem;
     }
 
     .swal-cert-btn-group {
@@ -305,7 +327,6 @@
       font-size: 1.6rem !important;
     }
 
-    /* 💎 หน้าต่างดำครอบใหญ่ */
     .modal-v1 {
       display: none; 
       position: fixed;
@@ -320,7 +341,6 @@
       justify-content: flex-start;
     }
     
-    /* 💎 แถบซูมลอยด้านหน้าภาพ */
     .zoom-slider-container {
       position: fixed;
       top: 16px;
@@ -337,7 +357,6 @@
       justify-content: center;
     }
     
-    /* 💎 คอนเทนเนอร์แม่ใหญ่ */
     .modal-v1-content {
       position: relative;
       width: 1200px; 
@@ -352,7 +371,6 @@
       transition: transform 0.1s ease;
     }
     
-    /* 🌟 เฟรมล็อกความกว้างเกียรติบัตร */
     .cert-image-frame {
       position: relative; 
       width: 1200px;
@@ -366,7 +384,6 @@
       height: auto;
     }
 
-    /* กลุ่มปุ่มกดจัดการด้านล่างภาพ */
     .modal-v1-action-container {
       display: flex;
       flex-direction: column;
@@ -500,8 +517,8 @@
   <div class="footer">
     <div class="fw-bold text-truncate me-2">Gammaco (Thailand) Co.,LTD.</div>
     <div id="webVersion" class="badge bg-light text-dark border flex-shrink-0 p-2 font-weight-bold" style="font-size:0.85rem;">
-  Index: 1.4.0 | Server: <span id="srvVersion">Loading...</span>
-</div>
+      Version: <span id="srvVersion">Loading...</span>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -567,7 +584,7 @@
     async function initSystem() {
       try {
         const res = await callServer('getVersion');
-        document.getElementById('srvVersion').innerText = res.version; // ส่งค่าไปเปลี่ยนเฉพาะใน span
+        document.getElementById('srvVersion').innerText = res.version;
         allEventsRaw = await callServer('getEvents');
         const selectEl = document.getElementById('eventSelect');
         const uniqueEventNames = [...new Set(allEventsRaw.map(item => item.eventName))];
@@ -662,29 +679,46 @@
           const safeM3 = details.member3.replace(/'/g, "\\'");
 
           innerBox.innerHTML = `
-            <div class="row g-3 g-sm-4">
-              <div class="col-12">
-                <div class="d-flex flex-wrap align-items-center">${congratHtml}${medalHtmlBadge}</div>
-                <div class="mt-3 bg-white p-3 rounded border border-light shadow-sm row g-3">
-                  <div class="col-md-6 border-md-end">
-                    <h6 class="fw-bold mb-3 text-success fs-5">📋 ข้อมูลทั่วไป</h6>
-                    <div class="row g-2" style="font-size: 1.1rem;">
-                      <div class="col-6 text-dark"><strong>Team ID:</strong> ${team.teamId}</div>
-                      <div class="col-6 text-dark text-truncate"><strong>ชื่อทีม:</strong> ${team.teamName}</div>
-                    </div>
-                    <div class="text-dark mt-2" style="font-size: 1.1rem; white-space: normal; word-break: break-word;"><strong>สถาบัน:</strong> ${team.institution}</div>
+            <div style="width: 100%; box-sizing: border-box;">
+              <div class="d-flex flex-wrap align-items-center mb-2">${congratHtml}${medalHtmlBadge}</div>
+              
+              <div class="bg-white p-3 rounded border border-light shadow-sm row mx-0 g-3 w-100">
+                
+                <!-- 📋 ข้อมูลทั่วไป: บังคับเรียงแนวตั้งเสมอตามเงื่อนไขเดิม -->
+                <div class="col-12 col-md-6 px-0 pe-md-3 border-md-end">
+                  <h6 class="fw-bold mb-3 text-success fs-5">📋 ข้อมูลทั่วไป</h6>
+                  <div class="d-flex flex-column gap-2" style="font-size: 1.1rem;">
+                    <div class="text-dark"><strong>Team ID:</strong> ${team.teamId}</div>
+                    <div class="text-dark text-wrap text-break"><strong>ชื่อทีม:</strong> ${team.teamName}</div>
+                    <div class="text-dark text-wrap text-break"><strong>สถาบัน:</strong> ${team.institution}</div>
                   </div>
-                  <div class="col-md-6 mt-3 mt-md-0">
-                    <h6 class="fw-bold mb-3 text-primary fs-5">📊 คะแนนการแข่งขัน</h6>
-                    <div class="scores-grid">
-                      <div class="score-box"><div class="score-label text-truncate">${scoreLabels.label1}</div><div class="score-value">${team.score1}</div></div>
-                      <div class="score-box"><div class="score-label text-truncate">${scoreLabels.label2}</div><div class="score-value">${team.score2}</div></div>
-                      <div class="score-box"><div class="score-label text-truncate">${scoreLabels.label3}</div><div class="score-value">${team.score3}</div></div>
+                </div>
+                
+                <!-- 📊 คะแนนการแข่งขัน: แสดงต่อท้ายถัดลงมาจากหัวข้อสถาบันในลักษณะ 3 บรรทัดแนวดิ่ง -->
+                <div class="col-12 col-md-6 px-0 ps-md-3 mt-4 mt-md-0">
+                  <h6 class="fw-bold mb-3 text-primary fs-5">📊 คะแนนการแข่งขัน</h6>
+                  <div class="scores-grid">
+                    <div class="score-box">
+                      <div class="score-label">${scoreLabels.label1}</div>
+                      <div class="score-divider">:</div>
+                      <div class="score-value">${team.score1}</div>
+                    </div>
+                    <div class="score-box">
+                      <div class="score-label">${scoreLabels.label2}</div>
+                      <div class="score-divider">:</div>
+                      <div class="score-value">${team.score2}</div>
+                    </div>
+                    <div class="score-box">
+                      <div class="score-label">${scoreLabels.label3}</div>
+                      <div class="score-divider">:</div>
+                      <div class="score-value">${team.score3}</div>
                     </div>
                   </div>
                 </div>
+
               </div>
-              <div class="col-12 mt-4">
+              
+              <div class="mt-4 w-100">
                 <h5 class="fw-bold text-dark mb-3 fs-5" style="border-left: 4px solid var(--primary-color); padding-left: 8px;">👥 รายชื่อสมาชิกทีม</h5>
                 <div class="responsive-member-row">
                   <div class="member-clickable-card" onclick="onMemberCardClicked('coach', '${safeCoach}', '${team.teamId}', '${team.teamName.replace(/'/g, "\\'")}', '${team.institution.replace(/'/g, "\\'")}', ${rankNum}, '${rawMedal}', '${safeUrlH}', '${safeUrlI}', '${safeUrlJ}', '${safeUrlK}', '${safeUrlL}', '${safeUrlM}', '${safeUrlN}', 'ผู้ควบคุมทีม')"><div class="member-role-title">👨‍🏫 ผู้ควบคุมทีม</div><p class="member-name-text text-truncate" title="${details.coach}">${details.coach}</p><div class="click-action-hint">📥 คลิกเพื่อ Genarate ID</div></div>
@@ -809,7 +843,7 @@
       const displayIdJoin = certIdsMap.joinCertId || '[ระบบจะออกรหัสอัตโนมัติ]';
       swalButtonsHtml += `
         <button class="swal-btn-cert" style="border-left: 6px solid #0dcaf0;" onclick="processCertGenerationAndPreview('${safeUrlH}', '${safeName}', '3', '${safeRole}')">
-          <div><span class="d-block fw-bold text-dark" style="font-size:1.1rem;">🤝 เกียรราบัตรเข้าร่วมการแข่งขัน</span><small class="text-muted fw-semibold">ID: ${displayIdJoin}</small></div>
+          <div><span class="d-block fw-bold text-dark" style="font-size:1.1rem;">🤝 เกียรติบัตรเข้าร่วมการแข่งขัน</span><small class="text-muted fw-semibold">ID: ${displayIdJoin}</small></div>
           <span class="badge bg-info text-dark ms-2 p-2">Preview</span>
         </button>`;
 
