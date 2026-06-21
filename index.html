@@ -42,10 +42,35 @@
       border-radius: 0 0 24px 24px;
       box-shadow: 0 4px 20px rgba(17, 153, 142, 0.25);
       margin-bottom: 1.5rem;
+      position: relative;
     }
 
     @media (min-width: 768px) {
       .top-banner { padding: 4rem 1rem; border-radius: 0 0 32px 32px; }
+    }
+
+    /* 📌 ปุ่มเปลี่ยนภาษาลอยมุมขวาบน */
+    .lang-switcher-container {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      z-index: 100;
+    }
+
+    .btn-lang-toggle {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: #ffffff;
+      font-weight: 600;
+      border-radius: 30px;
+      padding: 6px 16px;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+    }
+    .btn-lang-toggle:hover {
+      background: #ffffff;
+      color: var(--primary-color);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
     .white-card {
@@ -192,7 +217,6 @@
       border: 1px solid rgba(255, 153, 0, 0.25);
     }
 
-    /* 📌 บังคับโครงสร้างตารางคะแนนให้เรียงแถวเดี่ยว 3 บรรทัดแนวตั้ง ทั้งบนมือถือ แท็บเล็ต และคอมพิวเตอร์ */
     .scores-grid {
       display: flex;
       flex-direction: column;
@@ -469,8 +493,11 @@
 <body>
 
   <div class="top-banner text-center">
+    <div class="lang-switcher-container">
+      <button class="btn btn-lang-toggle" onclick="toggleLanguage()" id="langBtn">EN</button>
+    </div>
     <div class="container">
-      <h1 class="fs-1 fw-bold m-0" style="font-weight: 800;">ดาวน์โหลดใบประกาศนียบัตร</h1>
+      <h1 class="fs-1 fw-bold m-0" style="font-weight: 800;" id="mainTitle">ดาวน์โหลดใบประกาศนียบัตร</h1>
       <p class="lead opacity-90 mt-2 mb-0" style="font-size: 1.25rem; font-weight: 500;">Gammaco Robotics Competition</p>
     </div>
   </div>
@@ -480,10 +507,9 @@
       <div class="col-lg-12 col-md-12">
         <div class="white-card">
           <div class="text-start mx-auto" style="max-width: 550px;">
-            <label for="eventSelect" class="form-label fs-4 fw-bold mb-2" style="color: var(--text-dark);">รายการแข่งขัน</label>
+            <label for="eventSelect" class="form-label fs-4 fw-bold mb-2" style="color: var(--text-dark);" id="dropdownLabel">รายการแข่งขัน</label>
             <select id="eventSelect" class="form-select form-select-lg fs-5 p-3" onchange="onEventChanged()">
-              <option value="">-- เลือกรายการ --</option>
-            </select>
+              </select>
           </div>
         </div>
         <div id="tablesMainContainer"></div>
@@ -506,8 +532,8 @@
       </div>
       
       <div class="modal-v1-action-container">
-        <button class="btn btn-lg btn-success px-4 py-3 shadow fw-bold w-100 fs-5" onclick="triggerPDFCompileV1()">📥 ดาวน์โหลดใบประกาศนียบัตร (PDF)</button>
-        <button class="btn btn-lg btn-light px-4 py-3 border shadow fw-bold w-100 fs-5" onclick="closeV1Preview()">ปิดหน้าต่าง</button>
+        <button class="btn btn-lg btn-success px-4 py-3 shadow fw-bold w-100 fs-5" onclick="triggerPDFCompileV1()" id="btnDownloadPdf">📥 ดาวน์โหลดใบประกาศนียบัตร (PDF)</button>
+        <button class="btn btn-lg btn-light px-4 py-3 border shadow fw-bold w-100 fs-5" onclick="closeV1Preview()" id="btnClosePreview">ปิดหน้าต่าง</button>
       </div>
     </div>
   </div>
@@ -530,18 +556,136 @@
     let activeMemberContext = null;
     let globalActiveBase64 = ""; 
     let currentCertIdsMap = { rankCertId: '', medalCertId: '', joinCertId: '' };
-
-    const CERT_CONFIG = {
-      name: {
-        bottomOffset: "64%",     
-        baseSize: 72             
+    
+    // 📌 ระบบพจนานุกรมคลังภาษา (Dictionary Support)
+    let currentLang = "th"; 
+    const TRANSLATIONS = {
+      th: {
+        title: "ดาวน์โหลดใบประกาศนียบัตร",
+        dropdownLabel: "รายการแข่งขัน",
+        dropdownDefault: "-- เลือกรายการ --",
+        loadingTitle: "ระบบกำลังเรียกข้อมูล",
+        loadingText: "กรุณารอสักครู่...",
+        loadingDetails: "⏳ กำลังเรียกข้อมูลรายชื่อสมาชิกทีม...",
+        emptyTeams: "ไม่พบข้อมูลทีมสำหรับการแข่งขันนี้",
+        category: "ประเภท / รุ่น : ",
+        infoTitle: "📋 ข้อมูลทั่วไป",
+        scoreTitle: "📊 คะแนนการแข่งขัน",
+        memberTitle: "👥 รายชื่อสมาชิกทีม",
+        institution: "สถาบัน",
+        teamName: "ชื่อทีม",
+        coachRole: "👨‍🏫 ผู้ควบคุมทีม",
+        memberRole: "🤖 ผู้เข้าแข่งขัน",
+        actionHint: "📥 คลิกเพื่อ Genarate ID",
+        swalTitle: "เลือกประเภทใบประกาศนียบัตร",
+        swalContext: "ข้อมูลประจำตัว: ",
+        previewBtn: "Preview",
+        noTemplate: "ไม่พบไฟล์เทมเพลต",
+        noTemplateText: "รายการแข่งขันนี้ยังไม่ได้อัปโหลดลิงก์รูปภาพลงในคอลัมน์ระบบ",
+        loadingCert: "กำลังดึงรหัสและโหลดรูปภาพ...",
+        loadingCertText: "กรุณารอสักครู่ ระบบกำลังจัดสัดส่วนไฟล์...",
+        generatingPdf: "กำลังสร้างไฟล์ PDF...",
+        downloadSuccess: "สำเร็จ",
+        downloadSuccessText: "ดาวน์โหลดไฟล์เกียรติบัตรเรียบร้อยแล้วครับ",
+        btnDownloadPdf: "📥 ดาวน์โหลดใบประกาศนียบัตร (PDF)",
+        btnClosePreview: "ปิดหน้าต่าง",
+        errCheckId: "ไม่สามารถตรวจสอบรหัสจาก Sheets ได้: ",
+        errLoadSystem: "เกิดข้อผิดพลาดในการโหลดระบบ: ",
+        errGetTemplate: "ไม่สามารถออกรหัสประจำตัวได้: ",
+        noMember: "ไม่พบข้อมูล",
+        noMemberText: "ช่องสมาชิกนี้ไม่มีรายชื่อลงทะเบียนในระบบ",
+        certTypes: {
+          rank1: "🏆 รางวัลชนะเลิศ",
+          rank2: "🏆 รางวัลรองชนะเลิศอันดับที่ 1",
+          rank3: "🏆 รางวัลรองชนะเลิศอันดับที่ 2",
+          medalGold: "🏅 ประกาศนียบัตรเหรียญทอง",
+          medalSilver: "🏅 ประกาศนียบัตรเหรียญเงิน",
+          medalBronze: "🏅 ประกาศนียบัตรเหรียญทองแดง",
+          medalGeneric: "🏅 ประกาศนียบัตรเหรียญรางวัล",
+          join: "🤝 เกียรติบัตรเข้าร่วมการแข่งขัน"
+        },
+        autoId: "[ระบบจะออกรหัสอัตโนมัติ]",
+        tableHeaders: ["Rank", "Medal", "Team Name", "Institution"]
       },
-      certId: {
-        bottomOffset: "1.4%",     
-        leftOffset: "77.2%",       
-        baseSize: 22             
+      en: {
+        title: "Download Certificate",
+        dropdownLabel: "Competition Event",
+        dropdownDefault: "-- Select Event --",
+        loadingTitle: "Loading Data",
+        loadingText: "Please wait...",
+        loadingDetails: "⏳ Fetching team member data...",
+        emptyTeams: "No team data found for this competition.",
+        category: "Category / Age Group : ",
+        infoTitle: "📋 General Information",
+        scoreTitle: "📊 Competition Scores",
+        memberTitle: "👥 Team Members List",
+        institution: "Institution",
+        teamName: "Team Name",
+        coachRole: "👨‍🏫 Coach",
+        memberRole: "🤖 Contestant",
+        actionHint: "📥 Click to Generate ID",
+        swalTitle: "Select Certificate Type",
+        swalContext: "Identity: ",
+        previewBtn: "Preview",
+        noTemplate: "Template Not Found",
+        noTemplateText: "This event has not uploaded an image link in the system column yet.",
+        loadingCert: "Fetching ID & Loading Image...",
+        loadingCertText: "Please wait, the system is organizing files...",
+        generatingPdf: "Generating PDF file...",
+        downloadSuccess: "Success",
+        downloadSuccessText: "Certificate downloaded successfully.",
+        btnDownloadPdf: "📥 Download Certificate (PDF)",
+        btnClosePreview: "Close Window",
+        errCheckId: "Cannot verify code from Sheets: ",
+        errLoadSystem: "System initialization error: ",
+        errGetTemplate: "Unable to issue identification code: ",
+        noMember: "Data Not Found",
+        noMemberText: "This slot has no registered member in the system.",
+        certTypes: {
+          rank1: "🏆 Winner",
+          rank2: "🏆 1st Runner-up",
+          rank3: "🏆 2nd Runner-up",
+          medalGold: "🏅 Certificate of Gold Medal",
+          medalSilver: "🏅 Certificate of Silver Medal",
+          medalBronze: "🏅 Certificate of Bronze Medal",
+          medalGeneric: "🏅 Certificate of Medal Award",
+          join: "🤝 Certificate of Participation"
+        },
+        autoId: "[System Auto-generates ID]",
+        tableHeaders: ["Rank", "Medal", "Team Name", "Institution"]
       }
     };
+
+    const CERT_CONFIG = {
+      name: { bottomOffset: "64%", baseSize: 72 },
+      certId: { bottomOffset: "1.4%", leftOffset: "77.2%", baseSize: 22 }
+    };
+
+    function toggleLanguage() {
+      currentLang = (currentLang === "th") ? "en" : "th";
+      document.getElementById('langBtn').innerText = (currentLang === "th") ? "EN" : "TH";
+      applyLanguageStaticDOM();
+      onEventChanged(); // รีเฟรชข้อมูลในตารางย่อยทั้งหมดเป็นภาษาใหม่ทันที
+    }
+
+    function applyLanguageStaticDOM() {
+      const t = TRANSLATIONS[currentLang];
+      document.getElementById('mainTitle').innerText = t.title;
+      document.getElementById('dropdownLabel').innerText = t.dropdownLabel;
+      document.getElementById('btnDownloadPdf').innerText = t.btnDownloadPdf;
+      document.getElementById('btnClosePreview').innerText = t.btnClosePreview;
+      
+      // อัปเดต Dropdown ลิสต์รายการการแข่งขัน
+      const selectEl = document.getElementById('eventSelect');
+      const savedVal = selectEl.value;
+      selectEl.innerHTML = `<option value="">${t.dropdownDefault}</option>`;
+      const uniqueEventNames = [...new Set(allEventsRaw.map(item => item.eventName))];
+      uniqueEventNames.forEach(evName => {
+        let opt = document.createElement('option');
+        opt.value = evName; opt.innerText = evName; selectEl.appendChild(opt);
+      });
+      selectEl.value = savedVal;
+    }
 
     function calculateDynamicFontSize(text, baseSize, threshold = 25) {
       if (!text) return baseSize;
@@ -586,45 +730,42 @@
         const res = await callServer('getVersion');
         document.getElementById('srvVersion').innerText = res.version;
         allEventsRaw = await callServer('getEvents');
-        const selectEl = document.getElementById('eventSelect');
-        const uniqueEventNames = [...new Set(allEventsRaw.map(item => item.eventName))];
-        uniqueEventNames.forEach(evName => {
-          let opt = document.createElement('option');
-          opt.value = evName; opt.innerText = evName; selectEl.appendChild(opt);
-        });
-      } catch(e) { alert("เกิดข้อผิดพลาดในการโหลดระบบ: " + e.message); }
+        applyLanguageStaticDOM(); // โหลดภาษาเริ่มต้น (TH)
+      } catch(e) { alert(TRANSLATIONS[currentLang].errLoadSystem + e.message); }
     }
 
     async function onEventChanged() {
       const selectedEventName = document.getElementById('eventSelect').value;
       const mainContainer = document.getElementById('tablesMainContainer');
+      const t = TRANSLATIONS[currentLang];
       mainContainer.innerHTML = ""; 
       if (!selectedEventName) return;
 
-      Swal.fire({ title: 'ระบบกำลังเรียกข้อมูล', text: 'กรุณารอสักครู่...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+      Swal.fire({ title: t.loadingTitle, text: t.loadingText, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
       const filteredComps = allEventsRaw.filter(e => e.eventName === selectedEventName);
       if(filteredComps.length > 0) {
         try {
           const allTablesData = await callServer('getMultipleTeams', { compsList: filteredComps });
           allTablesData.forEach(tableData => { renderCompetitionBlock(tableData); });
           Swal.close();
-        } catch (error) { Swal.fire('เกิดข้อผิดพลาด', error.message, 'error'); }
+        } catch (error) { Swal.fire('Error', error.message, 'error'); }
       }
     }
 
     function renderCompetitionBlock(tableData) {
       const mainContainer = document.getElementById('tablesMainContainer');
+      const t = TRANSLATIONS[currentLang];
       const cardDiv = document.createElement('div'); cardDiv.className = "white-card";
-      const h3 = document.createElement('h3'); h3.className = "text-start m-0 fw-semibold fs-4 competition-title"; h3.innerText = "ประเภท / รุ่น : " + tableData.competitionName; cardDiv.appendChild(h3);
+      const h3 = document.createElement('h3'); h3.className = "text-start m-0 fw-semibold fs-4 competition-title"; h3.innerText = t.category + tableData.competitionName; cardDiv.appendChild(h3);
       const divider = document.createElement('div'); divider.className = "custom-divider"; cardDiv.appendChild(divider);
       const tableResponsive = document.createElement('div'); tableResponsive.className = "table-responsive table-container";
       
       const table = document.createElement('table'); table.className = "table table-hover align-middle";
-      table.innerHTML = `<thead><tr><th style="width: 10%;">Rank</th><th style="width: 12%;">Medal</th><th style="width: 38%;">Team Name</th><th style="width: 40%;">Institution</th></tr></thead>`;
+      table.innerHTML = `<thead><tr><th style="width: 10%;">${t.tableHeaders[0]}</th><th style="width: 12%;">${t.tableHeaders[1]}</th><th style="width: 38%;">${t.tableHeaders[2]}</th><th style="width: 40%;">${t.tableHeaders[3]}</th></tr></thead>`;
       
       const tbody = document.createElement('tbody');
       if (tableData.teams.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='4' class='text-center text-muted py-4 fw-bold fs-5'>ไม่พบข้อมูลทีมสำหรับการแข่งขันนี้</td></tr>";
+        tbody.innerHTML = `<tr><td colspan='4' class='text-center text-muted py-4 fw-bold fs-5'>${t.emptyTeams}</td></tr>`;
       } else {
         tableData.teams.forEach((team, index) => {
           const uniqueId = `detail-${tableData.competitionName.replace(/\s+/g, '')}-${index}`;
@@ -632,7 +773,7 @@
           trMain.innerHTML = `<td><strong style="font-weight:700;">${team.rank}</strong></td><td title="${team.medal}">${team.medal}</td><td title="${team.teamName}" style="font-weight:600; color:var(--text-dark);">${team.teamName}</td><td title="${team.institution}">${team.institution}</td>`;
           
           let trDetail = document.createElement('tr'); trDetail.id = uniqueId; trDetail.className = "detail-row";
-          trDetail.innerHTML = `<td colspan="4"><div class="accordion-inner-box"><div class="text-center py-4 text-secondary fw-bold fs-5"><div class="spinner-border text-success me-2" role="status"></div>⏳ กำลังเรียกข้อมูลรายชื่อสมาชิกทีม...</div></div></td>`;
+          trDetail.innerHTML = `<td colspan="4"><div class="accordion-inner-box"><div class="text-center py-4 text-secondary fw-bold fs-5"><div class="spinner-border text-success me-2" role="status"></div>${t.loadingDetails}</div></div></td>`;
           
           trMain.onclick = () => toggleAccordionRow(trMain, trDetail, team, tableData.competitionName, tableData.detailFileId, tableData.detailSheetName, tableData.scoreLabels, uniqueId, tableData.pdfUrl, tableData.pdfUrlColI, tableData.pdfUrlColJ, tableData.pdfUrlColK, tableData.pdfUrlColL, tableData.pdfUrlColM, tableData.pdfUrlColN);
           tbody.appendChild(trMain); tbody.appendChild(trDetail);
@@ -643,6 +784,7 @@
 
     async function toggleAccordionRow(trMain, trDetail, team, competitionName, detailFileId, detailSheetName, scoreLabels, uniqueId, categoryPdfUrl, categoryPdfUrlColI, categoryPdfUrlColJ, categoryPdfUrlColK, categoryPdfUrlColL, categoryPdfUrlColM, categoryPdfUrlColN) {
       const isShowing = trDetail.classList.contains('show-detail');
+      const t = TRANSLATIONS[currentLang];
       document.querySelectorAll('.detail-row').forEach(el => el.classList.remove('show-detail'));
       document.querySelectorAll('.clickable-row').forEach(el => el.classList.remove('active-row'));
 
@@ -651,19 +793,28 @@
         const innerBox = trDetail.querySelector('.accordion-inner-box');
         try {
           const details = await callServer('getTeamDetails', { detailFileId: detailFileId, detailSheetName: detailSheetName, teamId: team.teamId });
+          
           let medalText = ""; let rawMedal = team.medal.toString().trim();
-          if (rawMedal.includes("🥇") || rawMedal.toLowerCase().includes("gold") || rawMedal.includes("ทอง")) medalText = "ทอง";
-          else if (rawMedal.includes("🥈") || rawMedal.toLowerCase().includes("silver") || rawMedal.includes("เงิน")) medalText = "เงิน";
-          else if (rawMedal.includes("🥉") || rawMedal.toLowerCase().includes("bronze") || rawMedal.includes("ทองแดง")) medalText = "ทองแดง";
-          else if (rawMedal !== "" && rawMedal !== "-") medalText = rawMedal;
+          if (currentLang === "th") {
+            if (rawMedal.includes("🥇") || rawMedal.toLowerCase().includes("gold") || rawMedal.includes("ทอง")) medalText = "ทอง";
+            else if (rawMedal.includes("🥈") || rawMedal.toLowerCase().includes("silver") || rawMedal.includes("เงิน")) medalText = "เงิน";
+            else if (rawMedal.includes("🥉") || rawMedal.toLowerCase().includes("bronze") || rawMedal.includes("ทองแดง")) medalText = "ทองแดง";
+            else if (rawMedal !== "" && rawMedal !== "-") medalText = rawMedal;
+          } else {
+            if (rawMedal.includes("🥇") || rawMedal.toLowerCase().includes("gold") || rawMedal.includes("ทอง")) medalText = "Gold";
+            else if (rawMedal.includes("🥈") || rawMedal.toLowerCase().includes("silver") || rawMedal.includes("เงิน")) medalText = "Silver";
+            else if (rawMedal.includes("🥉") || rawMedal.toLowerCase().includes("bronze") || rawMedal.includes("ทองแดง")) medalText = "Bronze";
+            else if (rawMedal !== "" && rawMedal !== "-") medalText = rawMedal;
+          }
 
-          let medalHtmlBadge = medalText ? `<div class="medal-text-badge mb-2 mb-sm-0 me-2">📜 ประกาศนียบัตรเหรียญ${medalText}</div>` : '';
+          let medalHtmlBadge = medalText ? `<div class="medal-text-badge mb-2 mb-sm-0 me-2">${currentLang === "th" ? "📜 ประกาศนียบัตรเหรียญ" : "📜 Certificate of "}${medalText}</div>` : '';
           let rankNum = parseInt(team.rank);
           let congratHtml = "";
-          if (rankNum === 1) congratHtml = `<div class="congrat-badge mb-2 mb-sm-0 me-2">🎉 รางวัลชนะเลิศประเภท : ${competitionName}</div>`;
-          else if (rankNum === 2) congratHtml = `<div class="congrat-badge mb-2 mb-sm-0 me-2">🎉 รางวัลรองชนะเลิศอันดับ 1 ประเภท : ${competitionName}</div>`;
-          else if (rankNum === 3) congratHtml = `<div class="congrat-badge mb-2 mb-sm-0 me-2">🎉 รางวัลรองชนะเลิศอันดับ 2 ประเภท : ${competitionName}</div>`;
-          else congratHtml = `<div class="badge bg-light border text-dark p-2 mb-2 mb-sm-0 me-2 fs-6 fw-bold">Ranking: อันดับที่ ${team.rank}</div>`;
+          
+          if (rankNum === 1) congratHtml = `<div class="congrat-badge mb-2 mb-sm-0 me-2">${currentLang === "th" ? "🎉 รางวัลชนะเลิศประเภท : " : "🎉 Winner: "}${competitionName}</div>`;
+          else if (rankNum === 2) congratHtml = `<div class="congrat-badge mb-2 mb-sm-0 me-2">${currentLang === "th" ? "🎉 รางวัลรองชนะเลิศอันดับ 1 ประเภท : " : "🎉 1st Runner-up: "}${competitionName}</div>`;
+          else if (rankNum === 3) congratHtml = `<div class="congrat-badge mb-2 mb-sm-0 me-2">${currentLang === "th" ? "🎉 รางวัลรองชนะเลิศอันดับ 2 ประเภท : " : "🎉 2nd Runner-up: "}${competitionName}</div>`;
+          else congratHtml = `<div class="badge bg-light border text-dark p-2 mb-2 mb-sm-0 me-2 fs-6 fw-bold">Ranking: ${team.rank}</div>`;
 
           const safeUrlH = categoryPdfUrl ? categoryPdfUrl.replace(/'/g, "\\'") : '';
           const safeUrlI = categoryPdfUrlColI ? categoryPdfUrlColI.replace(/'/g, "\\'") : '';
@@ -684,19 +835,17 @@
               
               <div class="bg-white p-3 rounded border border-light shadow-sm row mx-0 g-3 w-100">
                 
-                <!-- 📋 ข้อมูลทั่วไป: บังคับเรียงแนวตั้งเสมอตามเงื่อนไขเดิม -->
                 <div class="col-12 col-md-6 px-0 pe-md-3 border-md-end">
-                  <h6 class="fw-bold mb-3 text-success fs-5">📋 ข้อมูลทั่วไป</h6>
+                  <h6 class="fw-bold mb-3 text-success fs-5">${t.infoTitle}</h6>
                   <div class="d-flex flex-column gap-2" style="font-size: 1.1rem;">
                     <div class="text-dark"><strong>Team ID:</strong> ${team.teamId}</div>
-                    <div class="text-dark text-wrap text-break"><strong>ชื่อทีม:</strong> ${team.teamName}</div>
-                    <div class="text-dark text-wrap text-break"><strong>สถาบัน:</strong> ${team.institution}</div>
+                    <div class="text-dark text-wrap text-break"><strong>${t.teamName}:</strong> ${team.teamName}</div>
+                    <div class="text-dark text-wrap text-break"><strong>${t.institution}:</strong> ${team.institution}</div>
                   </div>
                 </div>
                 
-                <!-- 📊 คะแนนการแข่งขัน: แสดงต่อท้ายถัดลงมาจากหัวข้อสถาบันในลักษณะ 3 บรรทัดแนวดิ่ง -->
                 <div class="col-12 col-md-6 px-0 ps-md-3 mt-4 mt-md-0">
-                  <h6 class="fw-bold mb-3 text-primary fs-5">📊 คะแนนการแข่งขัน</h6>
+                  <h6 class="fw-bold mb-3 text-primary fs-5">${t.scoreTitle}</h6>
                   <div class="scores-grid">
                     <div class="score-box">
                       <div class="score-label">${scoreLabels.label1}</div>
@@ -719,26 +868,27 @@
               </div>
               
               <div class="mt-4 w-100">
-                <h5 class="fw-bold text-dark mb-3 fs-5" style="border-left: 4px solid var(--primary-color); padding-left: 8px;">👥 รายชื่อสมาชิกทีม</h5>
+                <h5 class="fw-bold text-dark mb-3 fs-5" style="border-left: 4px solid var(--primary-color); padding-left: 8px;">${t.memberTitle}</h5>
                 <div class="responsive-member-row">
-                  <div class="member-clickable-card" onclick="onMemberCardClicked('coach', '${safeCoach}', '${team.teamId}', '${team.teamName.replace(/'/g, "\\'")}', '${team.institution.replace(/'/g, "\\'")}', ${rankNum}, '${rawMedal}', '${safeUrlH}', '${safeUrlI}', '${safeUrlJ}', '${safeUrlK}', '${safeUrlL}', '${safeUrlM}', '${safeUrlN}', 'ผู้ควบคุมทีม')"><div class="member-role-title">👨‍🏫 ผู้ควบคุมทีม</div><p class="member-name-text text-truncate" title="${details.coach}">${details.coach}</p><div class="click-action-hint">📥 คลิกเพื่อ Genarate ID</div></div>
-                  <div class="member-clickable-card" onclick="onMemberCardClicked('member1', '${safeM1}', '${team.teamId}', '${team.teamName.replace(/'/g, "\\'")}', '${team.institution.replace(/'/g, "\\'")}', ${rankNum}, '${rawMedal}', '${safeUrlH}', '${safeUrlI}', '${safeUrlJ}', '${safeUrlK}', '${safeUrlL}', '${safeUrlM}', '${safeUrlN}', 'ผู้เข้าแข่งขัน')"><div class="member-role-title">🤖 ผู้เข้าแข่งขัน 1</div><p class="member-name-text text-truncate" title="${details.member1}">${details.member1}</p><div class="click-action-hint">📥 คลิกเพื่อ Genarate ID</div></div>
-                  <div class="member-clickable-card" onclick="onMemberCardClicked('member2', '${safeM2}', '${team.teamId}', '${team.teamName.replace(/'/g, "\\'")}', '${team.institution.replace(/'/g, "\\'")}', ${rankNum}, '${rawMedal}', '${safeUrlH}', '${safeUrlI}', '${safeUrlJ}', '${safeUrlK}', '${safeUrlL}', '${safeUrlM}', '${safeUrlN}', 'ผู้เข้าแข่งขัน')"><div class="member-role-title">🤖 ผู้เข้าแข่งขัน 2</div><p class="member-name-text text-truncate" title="${details.member2}">${details.member2}</p><div class="click-action-hint">📥 คลิกเพื่อ Genarate ID</div></div>
-                  <div class="member-clickable-card" onclick="onMemberCardClicked('member3', '${safeM3}', '${team.teamId}', '${team.teamName.replace(/'/g, "\\'")}', '${team.institution.replace(/'/g, "\\'")}', ${rankNum}, '${rawMedal}', '${safeUrlH}', '${safeUrlI}', '${safeUrlJ}', '${safeUrlK}', '${safeUrlL}', '${safeUrlM}', '${safeUrlN}', 'ผู้เข้าแข่งขัน')"><div class="member-role-title">🤖 ผู้เข้าแข่งขัน 3</div><p class="member-name-text text-truncate" title="${details.member3}">${details.member3}</p><div class="click-action-hint">📥 คลิกเพื่อ Genarate ID</div></div>
+                  <div class="member-clickable-card" onclick="onMemberCardClicked('coach', '${safeCoach}', '${team.teamId}', '${team.teamName.replace(/'/g, "\\'")}', '${team.institution.replace(/'/g, "\\'")}', ${rankNum}, '${rawMedal}', '${safeUrlH}', '${safeUrlI}', '${safeUrlJ}', '${safeUrlK}', '${safeUrlL}', '${safeUrlM}', '${safeUrlN}', '${t.coachRole}')"><div class="member-role-title">${t.coachRole}</div><p class="member-name-text text-truncate" title="${details.coach}">${details.coach}</p><div class="click-action-hint">${t.actionHint}</div></div>
+                  <div class="member-clickable-card" onclick="onMemberCardClicked('member1', '${safeM1}', '${team.teamId}', '${team.teamName.replace(/'/g, "\\'")}', '${team.institution.replace(/'/g, "\\'")}', ${rankNum}, '${rawMedal}', '${safeUrlH}', '${safeUrlI}', '${safeUrlJ}', '${safeUrlK}', '${safeUrlL}', '${safeUrlM}', '${safeUrlN}', '${t.memberRole} 1')"><div class="member-role-title">${t.memberRole} 1</div><p class="member-name-text text-truncate" title="${details.member1}">${details.member1}</p><div class="click-action-hint">${t.actionHint}</div></div>
+                  <div class="member-clickable-card" onclick="onMemberCardClicked('member2', '${safeM2}', '${team.teamId}', '${team.teamName.replace(/'/g, "\\'")}', '${team.institution.replace(/'/g, "\\'")}', ${rankNum}, '${rawMedal}', '${safeUrlH}', '${safeUrlI}', '${safeUrlJ}', '${safeUrlK}', '${safeUrlL}', '${safeUrlM}', '${safeUrlN}', '${t.memberRole} 2')"><div class="member-role-title">${t.memberRole} 2</div><p class="member-name-text text-truncate" title="${details.member2}">${details.member2}</p><div class="click-action-hint">${t.actionHint}</div></div>
+                  <div class="member-clickable-card" onclick="onMemberCardClicked('member3', '${safeM3}', '${team.teamId}', '${team.teamName.replace(/'/g, "\\'")}', '${team.institution.replace(/'/g, "\\'")}', ${rankNum}, '${rawMedal}', '${safeUrlH}', '${safeUrlI}', '${safeUrlJ}', '${safeUrlK}', '${safeUrlL}', '${safeUrlM}', '${safeUrlN}', '${t.memberRole} 3')"><div class="member-role-title">${t.memberRole} 3</div><p class="member-name-text text-truncate" title="${details.member3}">${details.member3}</p><div class="click-action-hint">${t.actionHint}</div></div>
                 </div>
               </div>
             </div>
           `;
-        } catch (error) { innerBox.innerHTML = `<div class="text-danger text-center py-3 fw-bold">ไม่สามารถโหลดรายละเอียดข้อมูลทีมได้: ${error.message}</div>`; }
+        } catch (error) { innerBox.innerHTML = `<div class="text-danger text-center py-3 fw-bold">Error: ${error.message}</div>`; }
       }
     }
 
     async function onMemberCardClicked(roleType, personName, teamId, teamName, institution, rankNum, rawMedal, urlH, urlI, urlJ, urlK, urlL, urlM, urlN, roleLabel) {
+      const t = TRANSLATIONS[currentLang];
       if (!personName || personName.trim() === "" || personName.trim() === "-") {
-        Swal.fire({title: 'ไม่พบข้อมูล', text: 'ช่องสมาชิกนี้ไม่มีรายชื่อลงทะเบียนในระบบ', icon: 'warning'}); return;
+        Swal.fire({title: t.noMember, text: t.noMemberText, icon: 'warning'}); return;
       }
 
-      Swal.fire({ title: 'กำลังตรวจสอบสถานะรหัสประจำตัว...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+      Swal.fire({ title: currentLang === "th" ? 'กำลังตรวจสอบสถานะรหัสประจำตัว...' : 'Verifying Identity Status...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
       try {
         activeMemberContext = { 
@@ -753,7 +903,7 @@
         renderMenuModal(personName, rankNum, rawMedal, urlH, urlI, urlJ, urlK, urlL, urlM, urlN, teamName, roleLabel, currentCertIdsMap);
       } catch (err) {
         Swal.close();
-        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถตรวจสอบรหัสจาก Sheets ได้: ' + err.message, 'error');
+        Swal.fire('Error', t.errCheckId + err.message, 'error');
       }
     }
 
@@ -767,43 +917,45 @@
           mapResult.medalCertId = (await callServer('getOrCreateCertId', { teamId, personName, roleType: activeMemberContext.roleType, certType: '2' })).certificateId;
         }
         mapResult.joinCertId = (await callServer('getOrCreateCertId', { teamId, personName, roleType: activeMemberContext.roleType, certType: '3' })).certificateId;
-      } catch(e) { console.log("ตรวจสอบไอดีเดิมขัดข้อง: ", e); }
+      } catch(e) { console.log("Check backup ID error: ", e); }
       return mapResult;
     }
 
     function renderMenuModal(personName, rankNum, rawMedal, urlColH, urlColI, urlColJ, urlColK, urlColL, urlColM, urlColN, teamName, roleLabel, certIdsMap) {
+      const t = TRANSLATIONS[currentLang];
       let swalButtonsHtml = `<div class="swal-cert-btn-group">`;
 
       const safeName = personName.replace(/'/g, "\\'");
       const safeRole = roleLabel.replace(/'/g, "\\'");
+      const autoIdLabel = t.autoId;
 
       if (rankNum === 1) {
         const safeUrlI = urlColI ? urlColI.replace(/'/g, "\\'") : '';
-        const displayId = certIdsMap.rankCertId || '[ระบบจะออกรหัสอัตโนมัติ]';
+        const displayId = certIdsMap.rankCertId || autoIdLabel;
         swalButtonsHtml += `
           <button class="swal-btn-cert" style="border-left: 6px solid #D4AF37;" onclick="processCertGenerationAndPreview('${safeUrlI}', '${safeName}', '1', '${safeRole}')">
-            <div><span class="d-block fw-bold" style="color: #D4AF37 !important; font-size:1.1rem;">🏆 รางวัลชนะเลิศ</span><small class="text-muted fw-semibold">ID: ${displayId}</small></div>
-            <span class="badge bg-success ms-2 p-2">Preview</span>
+            <div><span class="d-block fw-bold" style="color: #D4AF37 !important; font-size:1.1rem;">${t.certTypes.rank1}</span><small class="text-muted fw-semibold">ID: ${displayId}</small></div>
+            <span class="badge bg-success ms-2 p-2">${t.previewBtn}</span>
           </button>`;
       }
 
       if (rankNum === 2) {
         const safeUrlJ = urlColJ ? urlColJ.replace(/'/g, "\\'") : '';
-        const displayId = certIdsMap.rankCertId || '[ระบบจะออกรหัสอัตโนมัติ]';
+        const displayId = certIdsMap.rankCertId || autoIdLabel;
         swalButtonsHtml += `
           <button class="swal-btn-cert" style="border-left: 6px solid #A0A0A0;" onclick="processCertGenerationAndPreview('${safeUrlJ}', '${safeName}', '1', '${safeRole}')">
-            <div><span class="d-block fw-bold" style="color: #A0A0A0 !important; font-size:1.1rem;">🏆 รางวัลรองชนะเลิศอันดับที่ 1</span><small class="text-muted fw-semibold">ID: ${displayId}</small></div>
-            <span class="badge bg-warning text-dark ms-2 p-2">Preview</span>
+            <div><span class="d-block fw-bold" style="color: #A0A0A0 !important; font-size:1.1rem;">${t.certTypes.rank2}</span><small class="text-muted fw-semibold">ID: ${displayId}</small></div>
+            <span class="badge bg-warning text-dark ms-2 p-2">${t.previewBtn}</span>
           </button>`;
       }
 
       if (rankNum === 3) {
         const safeUrlK = urlColK ? urlColK.replace(/'/g, "\\'") : '';
-        const displayId = certIdsMap.rankCertId || '[ระบบจะออกรหัสอัตโนมัติ]';
+        const displayId = certIdsMap.rankCertId || autoIdLabel;
         swalButtonsHtml += `
           <button class="swal-btn-cert" style="border-left: 6px solid #fd7e14;" onclick="processCertGenerationAndPreview('${safeUrlK}', '${safeName}', '1', '${safeRole}')">
-            <div><span class="d-block fw-bold text-danger" style="font-size:1.1rem;">🏆 รางวัลรองชนะเลิศอันดับที่ 2</span><small class="text-muted fw-semibold">ID: ${displayId}</small></div>
-            <span class="badge bg-danger ms-2 p-2">Preview</span>
+            <div><span class="d-block fw-bold text-danger" style="font-size:1.1rem;">${t.certTypes.rank3}</span><small class="text-muted fw-semibold">ID: ${displayId}</small></div>
+            <span class="badge bg-danger ms-2 p-2">${t.previewBtn}</span>
           </button>`;
       }
 
@@ -814,55 +966,56 @@
 
         if (lowerMedal.includes("🥉") || lowerMedal.includes("bronze") || lowerMedal.includes("ทองแดง")) {
           finalMedalUrl = urlColN;
-          medalTitleLabel = `ประกาศนียบัตรเหรียญทองแดง [${rawMedal}]`;
+          medalTitleLabel = t.certTypes.medalBronze + ` [${rawMedal}]`;
         } 
         else if (lowerMedal.includes("🥈") || lowerMedal.includes("silver") || lowerMedal.includes("เงิน")) {
           finalMedalUrl = urlColM;
-          medalTitleLabel = `ประกาศนียบัตรเหรียญเงิน [${rawMedal}]`;
+          medalTitleLabel = t.certTypes.medalSilver + ` [${rawMedal}]`;
         } 
         else if (lowerMedal.includes("🥇") || lowerMedal.includes("gold") || lowerMedal.includes("ทอง")) {
           finalMedalUrl = urlColL;
-          medalTitleLabel = `ประกาศนียบัตรเหรียญทอง [${rawMedal}]`;
+          medalTitleLabel = t.certTypes.medalGold + ` [${rawMedal}]`;
         }
         
         if(!finalMedalUrl || finalMedalUrl.trim() === "" || finalMedalUrl === "-") {
           finalMedalUrl = urlColH;
-          medalTitleLabel = `ประกาศนียบัตรเหรียญรางวัล [${rawMedal}]`;
+          medalTitleLabel = t.certTypes.medalGeneric + ` [${rawMedal}]`;
         }
 
         const safeUrlMedal = finalMedalUrl ? finalMedalUrl.replace(/'/g, "\\'") : '';
-        const displayId = certIdsMap.medalCertId || '[ระบบจะออกรหัสอัตโนมัติ]';
+        const displayId = certIdsMap.medalCertId || autoIdLabel;
         swalButtonsHtml += `
           <button class="swal-btn-cert" style="border-left: 6px solid #6f42c1;" onclick="processCertGenerationAndPreview('${safeUrlMedal}', '${safeName}', '2', '${safeRole}')">
             <div><span class="d-block fw-bold" style="color: #6f42c1; font-size:1.1rem;">🏅 ${medalTitleLabel}</span><small class="text-muted fw-semibold">ID: ${displayId}</small></div>
-            <span class="badge bg-secondary text-white ms-2 p-2">Preview</span>
+            <span class="badge bg-secondary text-white ms-2 p-2">${t.previewBtn}</span>
           </button>`;
       }
 
       const safeUrlH = urlColH ? urlColH.replace(/'/g, "\\'") : '';
-      const displayIdJoin = certIdsMap.joinCertId || '[ระบบจะออกรหัสอัตโนมัติ]';
+      const displayIdJoin = certIdsMap.joinCertId || autoIdLabel;
       swalButtonsHtml += `
         <button class="swal-btn-cert" style="border-left: 6px solid #0dcaf0;" onclick="processCertGenerationAndPreview('${safeUrlH}', '${safeName}', '3', '${safeRole}')">
-          <div><span class="d-block fw-bold text-dark" style="font-size:1.1rem;">🤝 เกียรติบัตรเข้าร่วมการแข่งขัน</span><small class="text-muted fw-semibold">ID: ${displayIdJoin}</small></div>
-          <span class="badge bg-info text-dark ms-2 p-2">Preview</span>
+          <div><span class="d-block fw-bold text-dark" style="font-size:1.1rem;">🤝 ${t.certTypes.join}</span><small class="text-muted fw-semibold">ID: ${displayIdJoin}</small></div>
+          <span class="badge bg-info text-dark ms-2 p-2">${t.previewBtn}</span>
         </button>`;
 
       swalButtonsHtml += `</div>`;
 
       Swal.fire({
-        title: 'เลือกประเภทใบประกาศนียบัตร',
-        html: `ข้อมูลประจำตัว: <strong style="font-size:1.15rem;">${personName}</strong><br>${swalButtonsHtml}`,
+        title: t.swalTitle,
+        html: `${t.swalContext}<strong style="font-size:1.15rem;">${personName}</strong><br>${swalButtonsHtml}`,
         showConfirmButton: false, showCloseButton: true, width: '600px'
       });
     }
 
     async function processCertGenerationAndPreview(imageUrl, personName, certType, roleLabel) {
+      const t = TRANSLATIONS[currentLang];
       if (!imageUrl || imageUrl.trim() === "" || imageUrl.trim() === "-") {
-        Swal.fire({title: 'ไม่พบไฟล์เทมเพลต', text: 'รายการแข่งขันนี้ยังไม่ได้อัปโหลดลิงก์รูปภาพลงในคอลัมน์ระบบ', icon: 'info'}).then(() => { returnToMenu(); });
+        Swal.fire({title: t.noTemplate, text: t.noTemplateText, icon: 'info'}).then(() => { returnToMenu(); });
         return;
       }
 
-      Swal.fire({ title: 'กำลังดึงรหัสและโหลดรูปภาพ...', text: 'กรุณารอสักครู่ ระบบกำลังจัดสัดส่วนไฟล์...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+      Swal.fire({ title: t.loadingCert, text: t.loadingCertText, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
       try {
         const certDataPart = await callServer('getOrCreateCertId', { teamId: activeMemberContext.teamId, personName: personName, roleType: activeMemberContext.roleType, certType: certType });
@@ -904,14 +1057,15 @@
         }
       } catch (e) {
         Swal.close();
-        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถออกรหัสประจำตัวได้: ' + e.message, 'error').then(() => { returnToMenu(); });
+        Swal.fire('Error', t.errGetTemplate + e.message, 'error').then(() => { returnToMenu(); });
       }
     }
 
     function triggerPDFCompileV1() {
       if (!globalActiveBase64 || !activeMemberContext) return;
+      const t = TRANSLATIONS[currentLang];
       
-      Swal.fire({ title: 'กำลังสร้างไฟล์ PDF...', text: 'กรุณารอสักครู่ ระบบกำลังจัดสัดส่วนไฟล์...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+      Swal.fire({ title: t.generatingPdf, text: t.loadingCertText, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
       
       const renderContainer = document.getElementById('v1HiddenRenderBox');
       renderContainer.innerHTML = ""; 
@@ -975,7 +1129,7 @@
           
           renderContainer.innerHTML = ""; 
           Swal.close();
-          Swal.fire('สำเร็จ', 'ดาวน์โหลดไฟล์เกียรติบัตรเรียบร้อยแล้วครับ', 'success');
+          Swal.fire(t.downloadSuccess, t.downloadSuccessText, 'success');
         });
       };
     }
