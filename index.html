@@ -324,14 +324,10 @@
     }
 
     .inst-cell {
-      max-width: 280px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: normal;
-      word-break: break-word;
-      line-height: 1.45;
-      color: var(--text-muted);
-      font-size: 1rem;
+      max-width: 225px;      /* ← จำกัดความกว้างไว้ */
+      overflow: hidden;       /* ← ซ่อนส่วนที่เกิน */
+      text-overflow: ellipsis; /* ← แสดง ... แทน */
+      white-space: nowrap;    /* ← ห้ามขึ้นบรรทัดใหม่ */
     }
 
     /* ══════════════════════════════════════════════
