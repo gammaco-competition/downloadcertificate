@@ -155,7 +155,7 @@
     }
     .toggle-bar-btn:hover { background: #e2e8f0; }
 
-    /* Score Pills */
+    /* Score Pills ปรับขนาดใหญ่พิเศษ */
     .score-container { display: flex; gap: 10px; align-items: center; }
     .score-pill {
       background: #ffffff;
@@ -343,7 +343,9 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <script>
+    // URL สำหรับเรียกใช้ Google Apps Script Web App Endpoint
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxDj_Edmz4fRLlX_2rqGNuH6Ayz57aw-KoGxA0yukAypaZH-jsv6aOwLl2nJRw2A1u-Og/exec";
+    
     const CERT_CONFIG = {
       name:   { bottomOffset: "64%", baseSize: 72 },
       certId: { bottomOffset: "1.4%", leftOffset: "77.2%", baseSize: 22 }
@@ -435,8 +437,9 @@
       }
     }
 
+    // ฟังก์ชันสื่อสารกับ Server แบบ Dual-Support (สลับใช้ google.script.run หรือ fetch อัตโนมัติ)
     async function callServer(action, payload = {}) {
-      if (typeof google !== 'undefined') {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
         return new Promise((res, rej) => {
           google.script.run
             .withSuccessHandler(r => res(r))
@@ -444,6 +447,7 @@
             .runServerAction(action, payload);
         });
       }
+      
       const resp = await fetch(WEB_APP_URL, {
         method: "POST",
         body: JSON.stringify({ action, payload }),
@@ -618,16 +622,19 @@
             const isCoach = r.roleKey === 'coach';
             const cardClass = isCoach ? 'member-card coach-card' : 'member-card';
             
+            // อ่านรายการตัวเลขที่จะโดนบล็อก (Blocklist Logic)
             const blocked = (r.blockedCerts || '').toString().split(',').map(s => s.trim());
 
             let certButtonsHTML = '';
             
+            // 1. ใบประกาศอันดับ (Cert Type '1') - แสดงผลเมื่อไม่โดนบล็อกด้วยเลข 1
             if (!blocked.includes('1')) {
               if (rankNum === 1) certButtonsHTML += createCertBtn(`🥇 ${tc('rank1')}`, r.roleKey, r.name, team.teamId, tableData.pdfUrlColI, '1');
               else if (rankNum === 2) certButtonsHTML += createCertBtn(`🥈 ${tc('rank2')}`, r.roleKey, r.name, team.teamId, tableData.pdfUrlColJ, '1');
               else if (rankNum === 3) certButtonsHTML += createCertBtn(`🥉 ${tc('rank3')}`, r.roleKey, r.name, team.teamId, tableData.pdfUrlColK, '1');
             }
 
+            // 2. ใบประกาศเหรียญ (Cert Type '2') - แสดงผลเมื่อไม่โดนบล็อกด้วยเลข 2
             if (!blocked.includes('2') && team.medal && team.medal !== '-') {
               let mUrl = tableData.pdfUrl;
               const lm = team.medal.toLowerCase();
@@ -638,6 +645,7 @@
               certButtonsHTML += createCertBtn('🏅 ประกาศนียบัตรเหรียญ', r.roleKey, r.name, team.teamId, mUrl, '2');
             }
 
+            // 3. ใบประกาศเข้าร่วม (Cert Type '3') - แสดงผลเมื่อไม่โดนบล็อกด้วยเลข 3
             if (!blocked.includes('3')) {
               certButtonsHTML += createCertBtn(`📜 ${tc('join')}`, r.roleKey, r.name, team.teamId, tableData.pdfUrl, '3');
             }
@@ -681,12 +689,12 @@
             </div>
 
             <div id="${memberContainerId}" class="member-grid-container" style="display: none;">
-              <!-- ปุ่มดาวน์โหลด ZIP สีเขียวเด่นชัดอยู่ในแถบรายชื่อสมาชิก -->
+              <!-- แถบสมาชิกพร้อมปุ่มดาวน์โหลด ZIP สีเขียวเด่นชัด -->
               <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-slate-200">
                 <span class="text-xs font-bold text-slate-600">👥 รายชื่อสมาชิกในทีม</span>
                 <button class="btn-download-zip" 
                         onclick="downloadTeamZip('${team.teamId}', '${team.teamName}')">
-                  📦 ดาวน์โหลดเกียรติบัตรทั้งหมด (ZIP)
+                  📦 ดาวน์โหลดเกียรติบัตรทั้งหมดในทีม (ZIP)
                 </button>
               </div>
 
